@@ -7,7 +7,7 @@ This example demonstrates the minimal configuration for Datadog Storage Manageme
 - IAM policy attached to your Datadog integration role
 - S3 Inventory configurations on source buckets
 - Destination bucket policy for inventory writes
-- Datadog Cloud Inventory Sync configuration
+- Registers inventory location with Datadog
 
 ## Prerequisites
 

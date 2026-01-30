@@ -35,12 +35,12 @@ variable "destination_prefix" {
 variable "destination_bucket_policy_management" {
   description = <<-EOT
     How to handle the destination bucket policy:
-    - "none" (default): Don't manage. Apply policy yourself: terraform output -raw destination_bucket_policy_json | aws s3api put-bucket-policy --bucket BUCKET --policy file:///dev/stdin
-    - "create": Create a fresh policy with only the required inventory statement.
-    - "merge": Read existing policy and add the required inventory statement.
+    - "merge" (default): Read existing policy and add the required inventory statement. If bucket has no policy, Terraform will error - use "create" instead.
+    - "create": Create a fresh policy with only the required inventory statement. Use for new buckets without existing policies.
+    - "none": Don't manage. Apply policy yourself: terraform output -raw destination_bucket_policy_json | aws s3api put-bucket-policy --bucket BUCKET --policy file:///dev/stdin
   EOT
   type        = string
-  default     = "none"
+  default     = "merge"
 
   validation {
     condition     = contains(["none", "create", "merge"], var.destination_bucket_policy_management)

@@ -6,15 +6,16 @@ Terraform module to configure [Datadog Storage Management](https://docs.datadogh
 
 - Configures S3 Inventory on source buckets
 - Grants required IAM permissions to your Datadog integration role
-- Creates Datadog Cloud Inventory Sync configuration
-- Optionally manages destination bucket policy (safe default: off)
-- Optionally enables S3 access logging for prefix-level metrics
+- Registers inventory location with Datadog
+- Automatically manages destination bucket policy (merges with existing policies)
+- Optionally enables S3 access logging for prefix-level metrics (requires existing Datadog Forwarder)
 
 ## Prerequisites
 
 1. **Datadog AWS Integration**: An existing [Datadog AWS integration](https://docs.datadoghq.com/integrations/amazon_web_services/) with an IAM role
 2. **S3 Buckets**: Existing source buckets to monitor and a destination bucket for inventory reports
 3. **Datadog Credentials**: API and App keys for the Datadog provider
+4. **Datadog Forwarder** (optional): For access logging, deploy the [Datadog Forwarder Lambda](https://docs.datadoghq.com/logs/guide/forwarder/?tab=cloudformation)
 
 ## Provider Configuration
 
@@ -38,9 +39,9 @@ provider "aws" {
 
 ## Usage
 
-### Basic Usage (New Destination Bucket)
+### Basic Usage
 
-If your destination bucket has **no existing policy**, let the module manage it:
+For buckets with existing policies (most common), the module automatically merges the required permissions:
 
 ```hcl
 module "datadog_storage_management" {
@@ -51,15 +52,34 @@ module "datadog_storage_management" {
   datadog_aws_integration_role_name = "DatadogIntegrationRole"
   source_bucket_names               = ["my-app-data", "my-logs-bucket"]
   destination_bucket_name           = "my-inventory-destination"
-
-  # Let module create the bucket policy (safe for new/empty buckets)
-  manage_destination_bucket_policy = true
+  # destination_bucket_policy_management = "merge" (default)
 }
 ```
 
-### Basic Usage (Apply Policy Yourself)
+### New Bucket (No Existing Policy)
 
-If you prefer to manage the bucket policy externally (default, safest):
+If your destination bucket has **no existing policy**, use `"create"`:
+
+```hcl
+module "datadog_storage_management" {
+  source  = "DataDog/storage-management-datadog/aws"
+  version = "~> 1.0"
+
+  name                              = "main"
+  datadog_aws_integration_role_name = "DatadogIntegrationRole"
+  source_bucket_names               = ["my-app-data", "my-logs-bucket"]
+  destination_bucket_name           = "my-new-inventory-bucket"
+
+  # Use "create" for buckets without existing policies
+  destination_bucket_policy_management = "create"
+}
+```
+
+> **Note**: If you see the error `Error: The bucket policy does not exist`, your bucket has no policy. Switch to `destination_bucket_policy_management = "create"`.
+
+### Manual Policy Management
+
+If you prefer to manage the bucket policy yourself (e.g., through a separate Terraform module or AWS console):
 
 ```hcl
 module "datadog_storage_management" {
@@ -70,11 +90,13 @@ module "datadog_storage_management" {
   datadog_aws_integration_role_name = "DatadogIntegrationRole"
   source_bucket_names               = ["my-app-data", "my-logs-bucket"]
   destination_bucket_name           = "my-inventory-destination"
-  # manage_destination_bucket_policy = false (default)
+
+  # Don't manage bucket policy - apply it yourself
+  destination_bucket_policy_management = "none"
 }
 
-# IMPORTANT: Apply the bucket policy from the output
-# terraform output -json destination_bucket_policy_json
+# After apply, get the required policy:
+# terraform output -raw destination_bucket_policy_json | aws s3api put-bucket-policy --bucket my-inventory-destination --policy file:///dev/stdin
 ```
 
 ### With Access Logging (Prefix-Level Metrics)
@@ -107,34 +129,6 @@ module "datadog_storage_management" {
 }
 ```
 
-### Managing Bucket Policies
-
-**Option 1: Apply policy yourself (default, safest):**
-```hcl
-module "datadog_storage_management" {
-  # ... other variables ...
-  # destination_bucket_policy_management = "none" (default)
-}
-
-# Then run: terraform output -raw destination_bucket_policy_json | aws s3api put-bucket-policy --bucket BUCKET --policy file:///dev/stdin
-```
-
-**Option 2: New bucket (no existing policy):**
-```hcl
-module "datadog_storage_management" {
-  # ... other variables ...
-  destination_bucket_policy_management = "create"
-}
-```
-
-**Option 3: Existing bucket with policy (merge):**
-```hcl
-module "datadog_storage_management" {
-  # ... other variables ...
-  destination_bucket_policy_management = "merge"  # Reads existing, adds our statement
-}
-```
-
 ## Requirements
 
 | Name | Version |
@@ -152,7 +146,7 @@ module "datadog_storage_management" {
 | `source_bucket_names` | List of S3 bucket names to enable inventory on | `list(string)` | n/a | yes |
 | `destination_bucket_name` | S3 bucket name for inventory reports | `string` | n/a | yes |
 | `destination_prefix` | Prefix path within the destination bucket | `string` | `"datadog-inventories/"` | no |
-| `destination_bucket_policy_management` | How to handle bucket policy: "none", "create", or "merge" | `string` | `"none"` | no |
+| `destination_bucket_policy_management` | How to handle bucket policy: "merge" (default), "create", or "none" | `string` | `"merge"` | no |
 | `enable_access_logging` | Enable S3 access logging for prefix-level metrics | `bool` | `false` | no |
 | `access_log_bucket_name` | S3 bucket for access logs | `string` | `""` | no |
 | `access_log_prefix` | Prefix for access log objects | `string` | `"s3-access-logs/"` | no |
@@ -170,9 +164,8 @@ module "datadog_storage_management" {
 | Resource | Description | Created when |
 |----------|-------------|--------------|
 | `aws_iam_role_policy` | Inline policy on Datadog role | Always |
-| `aws_s3_bucket_policy` | Destination bucket policy | `manage_destination_bucket_policy = true` |
+| `aws_s3_bucket_policy` | Destination bucket policy | `destination_bucket_policy_management != "none"` (default: managed) |
 | `aws_s3_bucket_inventory` | Inventory config per source bucket | Always |
-| `datadog_cloud_inventory_sync_config` | Datadog sync configuration | Always |
 | `aws_s3_bucket_logging` | Access logging on source buckets | `enable_access_logging = true` |
 | `aws_lambda_permission` | S3 → Lambda invoke permission | `enable_access_logging = true` |
 | `aws_s3_bucket_notification` | Access log bucket notifications | `enable_access_logging = true` |

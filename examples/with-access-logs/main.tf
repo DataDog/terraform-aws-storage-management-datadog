@@ -33,7 +33,8 @@ module "datadog_storage_management" {
   source_bucket_names               = ["my-app-data", "my-logs-bucket"]
   destination_bucket_name           = "my-inventory-destination"
 
-  # Bucket policy: "none" (default), "create", or "merge"
+  # Bucket policy: "merge" (default), "create" (for new buckets), or "none"
+  # Using "create" here as example shows a new bucket without existing policy
   destination_bucket_policy_management = "create"
 
   # Enable access logging for prefix-level metrics
