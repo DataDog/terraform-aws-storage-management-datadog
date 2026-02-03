@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.5"
 
   required_providers {
     aws = {
@@ -8,7 +8,7 @@ terraform {
     }
     datadog = {
       source  = "DataDog/datadog"
-      version = ">= 3.50"
+      version = ">= 3.85"
     }
   }
 }

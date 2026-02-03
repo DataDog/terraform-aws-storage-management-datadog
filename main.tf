@@ -1,4 +1,19 @@
 ################################################################################
+# Input Validation
+################################################################################
+
+check "access_logging_requirements" {
+  assert {
+    condition     = !var.enable_access_logging || var.access_log_bucket_name != ""
+    error_message = "access_log_bucket_name is required when enable_access_logging is true."
+  }
+  assert {
+    condition     = !var.enable_access_logging || var.datadog_forwarder_arn != ""
+    error_message = "datadog_forwarder_arn is required when enable_access_logging is true."
+  }
+}
+
+################################################################################
 # IAM Policy for Datadog Storage Management
 ################################################################################
 
@@ -24,7 +39,7 @@ data "aws_iam_policy_document" "storage_management" {
     resources = ["*"]
   }
 
-  # Read inventory reports from destination bucket
+  # Read inventory reports from destination bucket (scoped to prefix)
   statement {
     sid    = "DatadogReadInventoryFromDestinationBucket"
     effect = "Allow"
@@ -34,7 +49,7 @@ data "aws_iam_policy_document" "storage_management" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.destination_bucket_name}/*"
+      "arn:aws:s3:::${var.destination_bucket_name}/${var.destination_prefix}*"
     ]
   }
 }

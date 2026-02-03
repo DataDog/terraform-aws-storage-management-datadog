@@ -133,9 +133,9 @@ module "datadog_storage_management" {
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.0 |
+| terraform | >= 1.5 |
 | aws | >= 5.0 |
-| datadog | >= 3.50 |
+| datadog | >= 3.85 |
 
 ## Variables
 
@@ -204,7 +204,7 @@ The module attaches an inline policy to your Datadog integration role with these
       "Sid": "DatadogReadInventoryReports",
       "Effect": "Allow",
       "Action": ["s3:GetObject"],
-      "Resource": ["arn:aws:s3:::DESTINATION_BUCKET/*"]
+      "Resource": ["arn:aws:s3:::DESTINATION_BUCKET/DESTINATION_PREFIX*"]
     }
   ]
 }
