@@ -109,6 +109,29 @@ resource "aws_s3_bucket_policy" "destination" {
 }
 
 ################################################################################
+# Destination Bucket Lifecycle (auto-expire inventory reports)
+################################################################################
+
+resource "aws_s3_bucket_lifecycle_configuration" "destination" {
+  count = var.manage_destination_lifecycle ? 1 : 0
+
+  bucket = var.destination_bucket_name
+
+  rule {
+    id     = "DatadogInventoryExpiration-${var.name}"
+    status = "Enabled"
+
+    filter {
+      prefix = var.destination_prefix
+    }
+
+    expiration {
+      days = 2
+    }
+  }
+}
+
+################################################################################
 # S3 Inventory Configuration
 ################################################################################
 

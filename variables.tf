@@ -51,6 +51,12 @@ variable "destination_bucket_policy_management" {
   }
 }
 
+variable "manage_destination_lifecycle" {
+  description = "Create lifecycle rule to auto-expire inventory reports after 2 days. WARNING: This overwrites ALL existing lifecycle rules on the destination bucket."
+  type        = bool
+  default     = false
+}
+
 ################################################################################
 # Access Logging Variables (Optional)
 ################################################################################

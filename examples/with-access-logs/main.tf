@@ -40,6 +40,10 @@ module "datadog_storage_management" {
   # Using "create" here as example shows a new bucket without existing policy
   destination_bucket_policy_management = "create"
 
+  # Auto-expire inventory reports after 2 days to prevent bucket growth
+  # WARNING: Only enable on dedicated buckets - this overwrites ALL existing lifecycle rules
+  manage_destination_lifecycle = true
+
   # Enable access logging for prefix-level metrics
   enable_access_logging  = true
   access_log_bucket_name = "my-access-logs-bucket"

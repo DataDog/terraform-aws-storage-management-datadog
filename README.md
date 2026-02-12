@@ -147,6 +147,7 @@ module "datadog_storage_management" {
 | `destination_bucket_name` | S3 bucket name for inventory reports | `string` | n/a | yes |
 | `destination_prefix` | Prefix path within the destination bucket | `string` | `"datadog-inventories/"` | no |
 | `destination_bucket_policy_management` | How to handle bucket policy: "merge" (default), "create", or "none" | `string` | `"merge"` | no |
+| `manage_destination_lifecycle` | Create lifecycle rule to auto-expire inventory (WARNING: overwrites all existing rules) | `bool` | `false` | no |
 | `enable_access_logging` | Enable S3 access logging for prefix-level metrics | `bool` | `false` | no |
 | `access_log_bucket_name` | S3 bucket for access logs | `string` | `""` | no |
 | `access_log_prefix` | Prefix for access log objects | `string` | `"s3-access-logs/"` | no |
@@ -165,6 +166,7 @@ module "datadog_storage_management" {
 |----------|-------------|--------------|
 | `aws_iam_role_policy` | Inline policy on Datadog role | Always |
 | `aws_s3_bucket_policy` | Destination bucket policy | `destination_bucket_policy_management != "none"` (default: managed) |
+| `aws_s3_bucket_lifecycle_configuration` | Auto-expire inventory reports after 2 days | `manage_destination_lifecycle = true` |
 | `aws_s3_bucket_inventory` | Inventory config per source bucket | Always |
 | `aws_s3_bucket_logging` | Access logging on source buckets | `enable_access_logging = true` |
 | `aws_lambda_permission` | S3 → Lambda invoke permission | `enable_access_logging = true` |
@@ -174,6 +176,8 @@ module "datadog_storage_management" {
 
 - **Single Account Only**: Source and destination buckets must be in the same AWS account
 - **Same Region**: All buckets must be in the same AWS region
+- **Inventory Retention Recommended**: Without a retention policy, inventory reports accumulate daily and can significantly increase storage costs over time. Either enable `manage_destination_lifecycle = true` (for dedicated buckets) or configure your own lifecycle rule to expire objects under the `destination_prefix`.
+- **Destination Bucket Lifecycle Overwrites**: If `manage_destination_lifecycle = true`, the module creates a lifecycle rule to auto-expire inventory reports after 2 days. **This overwrites ALL existing lifecycle rules on the bucket.** Only enable on dedicated buckets with no other lifecycle rules.
 - **Access Logging Overwrites**: Enabling access logging will overwrite existing logging configuration on source buckets
 
 ## IAM Permissions

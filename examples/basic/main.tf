@@ -28,4 +28,8 @@ module "datadog_storage_management" {
   # Bucket policy: "merge" (default), "create" (for new buckets), or "none"
   # Using "create" here as example shows a new bucket without existing policy
   destination_bucket_policy_management = "create"
+
+  # Auto-expire inventory reports after 2 days to prevent bucket growth
+  # WARNING: Only enable on dedicated buckets - this overwrites ALL existing lifecycle rules
+  manage_destination_lifecycle = true
 }
