@@ -151,7 +151,8 @@ resource "aws_s3_bucket_inventory" "source" {
     bucket {
       bucket_arn = "arn:aws:s3:::${var.destination_bucket_name}"
       format     = "CSV"
-      prefix     = var.destination_prefix
+      # AWS S3 Inventory inserts its own "/" after this prefix, so a trailing slash here would double it.
+      prefix = trimsuffix(var.destination_prefix, "/")
     }
   }
 
